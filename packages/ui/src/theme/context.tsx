@@ -26,7 +26,24 @@ function ensureThemeStyleElement(): HTMLStyleElement {
 }
 
 function getSystemMode(): "light" | "dark" {
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
+  const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
+
+  // Check if media query is properly supported
+  // On some Linux environments (X11 + WebKitGTK), this detection may be unreliable
+  if (mediaQuery.media !== "not all") {
+    return mediaQuery.matches ? "dark" : "light"
+  }
+
+  // Fallback: check saved user preference
+  try {
+    const saved = localStorage.getItem("opencode-color-scheme")
+    if (saved === "light" || saved === "dark") {
+      return saved
+    }
+  } catch {}
+
+  // Default to dark mode for better contrast when system preference is unavailable
+  return "dark"
 }
 
 function applyThemeCss(theme: DesktopTheme, themeId: string, mode: "light" | "dark") {

@@ -98,6 +98,29 @@ export const Terminal = (props: TerminalProps) => {
     const mod = await import("ghostty-web")
     ghostty = await mod.Ghostty.load()
 
+    // Wait for PTY session to be ready before connecting WebSocket
+    const waitForPty = async (maxRetries = 10, delay = 100): Promise<boolean> => {
+      for (let i = 0; i < maxRetries; i++) {
+        try {
+          const response = await sdk.client.pty.get({ ptyID: local.pty.id })
+          if (response.data?.id === local.pty.id) {
+            return true
+          }
+        } catch {
+          // PTY not found, continue waiting
+        }
+        await new Promise((resolve) => setTimeout(resolve, delay))
+      }
+      return false
+    }
+
+    const ptyExists = await waitForPty()
+    if (!ptyExists) {
+      console.error("PTY session not found after retries:", local.pty.id)
+      props.onConnectError?.(new Error("PTY session not found"))
+      return
+    }
+
     const socket = new WebSocket(
       sdk.url + `/pty/${local.pty.id}/connect?directory=${encodeURIComponent(sdk.directory)}`,
     )
@@ -169,6 +192,7 @@ export const Terminal = (props: TerminalProps) => {
     t.loadAddon(fitAddon)
 
     t.open(container)
+
     container.addEventListener("pointerdown", handlePointerDown)
     focusTerminal()
 

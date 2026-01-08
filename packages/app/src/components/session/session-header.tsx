@@ -6,6 +6,7 @@ import { useServer } from "@/context/server"
 import { useDialog } from "@opencode-ai/ui/context/dialog"
 import { useSync } from "@/context/sync"
 import { useGlobalSDK } from "@/context/global-sdk"
+import { useTheme } from "@opencode-ai/ui/theme"
 import { getFilename } from "@opencode-ai/util/path"
 import { base64Decode, base64Encode } from "@opencode-ai/util/encode"
 import { iife } from "@opencode-ai/util/iife"
@@ -31,6 +32,27 @@ export function SessionHeader() {
   const server = useServer()
   const dialog = useDialog()
   const sync = useSync()
+  const theme = useTheme()
+
+  const themeIcon = () => {
+    const scheme = theme.colorScheme()
+    if (scheme === "system") return "sun-moon" as const
+    if (scheme === "light") return "sun" as const
+    return "moon" as const
+  }
+
+  const themeTooltip = () => {
+    const scheme = theme.colorScheme()
+    if (scheme === "system") return "Theme: System"
+    if (scheme === "light") return "Theme: Light"
+    return "Theme: Dark"
+  }
+
+  const cycleTheme = () => {
+    const scheme = theme.colorScheme()
+    const next = { system: "light", light: "dark", dark: "system" } as const
+    theme.setColorScheme(next[scheme])
+  }
 
   const projectDirectory = createMemo(() => base64Decode(params.dir ?? ""))
 
@@ -254,6 +276,9 @@ export function SessionHeader() {
               })}
             </Popover>
           </Show>
+          <Tooltip class="shrink-0" value={themeTooltip()}>
+            <IconButton icon={themeIcon()} variant="ghost" onClick={cycleTheme} />
+          </Tooltip>
         </div>
       </div>
     </header>

@@ -420,10 +420,16 @@ export namespace Server {
             },
           }),
           validator("param", z.object({ ptyID: z.string() })),
+          async (c, next) => {
+            const id = c.req.param("ptyID")
+            if (!Pty.get(id)) {
+              return c.json({ error: "Session not found" }, 404)
+            }
+            return next()
+          },
           upgradeWebSocket((c) => {
             const id = c.req.param("ptyID")
             let handler: ReturnType<typeof Pty.connect>
-            if (!Pty.get(id)) throw new Error("Session not found")
             return {
               onOpen(_event, ws) {
                 handler = Pty.connect(id, ws)
